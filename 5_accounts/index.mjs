@@ -22,6 +22,7 @@ function operation() {
           "Consultar Saldo",
           "Depositar",
           "Sacar",
+          "PIX",
           "Sair",
         ],
       },
@@ -41,6 +42,11 @@ function operation() {
           break;
 
         case "Sacar":
+          Withdraw();
+          break;
+
+        case "PIX":
+          PIX();
           break;
 
         case "Sair":
@@ -202,4 +208,133 @@ function getAccountBalance() {
       operation();
     })
     .catch((err) => console.log(err));
+}
+
+//Withdraw an amount from user account
+function Withdraw() {
+  inquirer
+    .prompt([
+      {
+        name: "accountName",
+        message: "Qual nome da sua conta?",
+      },
+    ])
+    .then((answer) => {
+      const accountName = answer["accountName"];
+      if (!checkaccounr(accountName)) {
+        return Withdraw();
+      }
+      inquirer
+        .prompt([
+          {
+            name: "amount",
+            message: "Quanto voce deseja sacar?",
+          },
+        ])
+        .then((answer) => {
+          const amount = answer["amount"];
+          removeAmount(accountName, amount);
+        })
+        .catch((err) => console.log(err));
+    })
+    .catch((err) => console.log(err));
+}
+
+function removeAmount(accountName, amount) {
+  const account = getaccount(accountName);
+  if (!amount) {
+    console.log(chalk.red("Nenhum valor foi digitado, digite um valor"));
+    return Withdraw();
+  }
+
+  if (account.balance < amount) {
+    console.log(chalk.red("Você não tem esse valor!"));
+    return Withdraw();
+  }
+  account.balace = parseFloat(account.balance) - parseFloat(amount);
+
+  fs.writeFileSync(
+    `Accounts/${accountName}.json`,
+    JSON.stringify(account),
+    function (err) {
+      console.log(err);
+    }
+  );
+  console.log(
+    chalk.bgGreen.bold(
+      `Parabéns foi sacado o valor de R$${amount} da conta ${accountName}`
+    )
+  );
+}
+
+function PIX() {
+  inquirer
+    .prompt([
+      {
+        name: "accountName",
+        message: "Qual nome da sua conta?",
+      },
+    ])
+    .then((answer) => {
+      const accountName = answer["accountName"];
+      if (!checkaccounr(accountName)) {
+        return PIX();
+      }
+      inquirer
+        .prompt([
+          {
+            name: "accountNameEnvio",
+            message: "Digite o nome do usuario para o envio:",
+          },
+        ])
+        .then((answer) => {
+          const accountNameEnvio = answer["accountNameEnvio"];
+          if (!checkaccounr(accountNameEnvio)) {
+            return PIX();
+          }
+          inquirer
+            .prompt([
+              {
+                name: "amount",
+                message: "Qual valor deseja enviar?",
+              },
+            ])
+            .then((answer) => {
+              const amount = answer["amount"];
+              if (!amount) {
+                console.log("Nenhum valor digitado");
+                return PIX();
+              }
+              enviarDinheiro(accountName, amount);
+            })
+            .catch((err) => console.log(err));
+        })
+        .catch((err) => console.log(err));
+    })
+    .catch((err) => console.log(err));
+}
+
+function enviarDinheiro(accountName, amount) {
+  const account = getaccount(accountName);
+  if (!amount) {
+    console.log(chalk.red("Nenhum valor foi digitado, digite um valor"));
+    return Withdraw();
+  }
+
+  if (account.balance < amount) {
+    console.log(chalk.red("Você não tem esse valor!"));
+    return operation();
+  }
+  account.balance = parseFloat(account.balance) - parseFloat(amount);
+
+  fs.writeFileSync(
+    `Accounts/${accountName}.json`,
+    JSON.stringify(account),
+    function (err) {
+      console.log(err);
+    }
+  );
+
+  console.log(`PIX enviado com sucesso no valor de R$${amount}`);
+  operation();
 }
